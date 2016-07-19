@@ -67,7 +67,7 @@ Found expected version for Application: Keynote (macOS). Exiting.
 ```
 
 ##### Uploading to Slack
-If you would like to optionally upload your results to slack, you must _all_ slack parameters:
+If you would like to optionally upload your results to slack, you must pass _all_ slack parameters:
 
 A webhook is also required. For more information, please see [Slack's documentation](https://api.slack.com/incoming-webhooks).
 ```
