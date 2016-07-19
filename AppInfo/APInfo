@@ -91,11 +91,9 @@ def main():
     slackchannel = opts.slackchannel
     slackicon = get_results(id)['artworkUrl100']
     if 'mac-software' in get_results(id)['kind']:
-        appname = appname = ('Application: %s (macOS)'
-        % get_results(id)['trackName'])
+        appname = ('Application: %s (macOS)' % get_results(id)['trackName'])
     else:
-        appname = appname = ('Application: %s (iOS)'
-        % get_results(id)['trackName'])
+        appname = ('Application: %s (iOS)' % get_results(id)['trackName'])
     # Hacky way to dynamically generate output data with newlines.
     if version is True:
         version = '\nVersion: %s' % get_results(id)['version']
