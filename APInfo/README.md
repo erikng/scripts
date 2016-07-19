@@ -84,7 +84,7 @@ A webhook is also required. For more information, please see [Slack's documentat
 
 The slack output will conditionally use the Application's 100px icon for the bot's icon_url.
 
-![APInfo Slack Example](https://github.com/erikng/scripts/raw/master/AppInfo/APInfo.png)
+![APInfo Slack Example](https://github.com/erikng/scripts/raw/master/APInfo/APInfo.png)
 
 ##### Additional notes on Slack
 If you plan to wrap this application, note that there is a bug with Slack where only the first message from a bot will show the icon. To workaround this, conditionally or statically set the `--slackusername` to unique values per application.
