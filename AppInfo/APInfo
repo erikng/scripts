@@ -1,0 +1,129 @@
+#!/usr/bin/python
+"""Looks up an iOS or MAS application's name and optionally displays
+version, release notes and release date. This can only be used to upload the
+data to a slack channel.
+
+Author: Erik Gomez
+"""
+
+import json
+import optparse
+import re
+import subprocess
+import sys
+import urllib2
+
+
+def get_results(id):
+    url = 'https://itunes.apple.com/lookup?id=' + id
+    try:
+        request = urllib2.urlopen(url)
+        jsondata = json.loads(request.read())
+        return jsondata['results'][0]
+    except:
+        raise ProcessorError('Could not retrieve version from URL: %s' % url)
+
+
+def post_to_slack(appname, outputdata, slackchannel, slackicon, slackusername,
+                  slackwebhook):
+    # Slack payload
+    payload = {
+        "channel": slackchannel,
+        "username": slackusername,
+        "icon_url": slackicon,
+        "attachments": [
+            {
+                'fields': [
+                    {
+                        'title': appname,
+                        'value': outputdata
+                    }
+                ]
+            }
+        ]
+    }
+    try:
+        cmd = ['/usr/bin/curl', '-X', 'POST', '--data-urlencode',
+               'payload=' + json.dumps(payload), slackwebhook]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        output, err = proc.communicate()
+    except Exception:
+        sys.stderr.write('Failed to send to Slack: %s') % payload
+        sys.exit(1)
+
+
+def main():
+    usage = "%prog [options]"
+    o = optparse.OptionParser(usage=usage)
+    o.add_option("--id", help=("Required: iTunes Application ID."))
+    o.add_option("--expectedversion", default=None,
+                 help=("Optional: Specify expected version. Useful when using "
+                       "Slack output."))
+    o.add_option("--releasedate", action="store_true", default=False,
+                 help=("Optional: Obtain Release Date information"))
+    o.add_option("--releasenotes", action="store_true", default=False,
+                 help=("Optional: Obtain Release Notes information."))
+    o.add_option("--slack", action="store_true", default=False,
+                 help=("Optional: Use Slack"))
+    o.add_option("--slackwebhook", default=None,
+                 help=("Optional: Slack Webhook URL. Requires Slack Option."))
+    o.add_option("--slackusername", default=None,
+                 help=("Optional: Slack username. Requires Slack Option."))
+    o.add_option("--slackchannel", default=None,
+                 help=("Optional: Slack channel. Requires Slack Option."))
+    o.add_option("--version", action="store_true", default=False,
+                 help=("Optional: Obtain Version information."))
+    opts, args = o.parse_args()
+
+    if not opts.id:
+        o.print_help()
+        sys.exit(1)
+
+    # Variables
+    id = opts.id
+    version = opts.version
+    releasenotes = opts.releasenotes
+    releasedate = opts.releasedate
+    slack = opts.slack
+    slackwebhook = opts.slackwebhook
+    slackusername = opts.slackusername
+    slackchannel = opts.slackchannel
+    slackicon = get_results(id)['artworkUrl100']
+    if 'mac-software' in get_results(id)['kind']:
+        appname = appname = ('Application: %s (macOS)'
+        % get_results(id)['trackName'])
+    else:
+        appname = appname = ('Application: %s (iOS)'
+        % get_results(id)['trackName'])
+    # Hacky way to dynamically generate output data with newlines.
+    if version is True:
+        version = '\nVersion: %s' % get_results(id)['version']
+    if releasenotes is True:
+        releasenotes = '\nRelease Notes: %s' % get_results(id)['releaseNotes']
+    if releasedate is True:
+        releasedate = ('\nRelease Date: %s'
+                       % get_results(id)['currentVersionReleaseDate'][0:10])
+    datatypes = [version, releasedate, releasenotes]
+    outputdata = ' '.join(filter(None, datatypes))
+
+    # Start the work
+    if opts.expectedversion:
+        expectedversion = opts.expectedversion
+        if expectedversion == get_results(id)['version']:
+            print 'Found expected version for %s. Exiting.' % appname
+            sys.exit(1)
+        else:
+            print 'New version of application detected. \n'
+            print appname + outputdata
+            if slack is True:
+                post_to_slack(appname, outputdata, slackchannel, slackicon,
+                              slackusername, slackwebhook)
+    else:
+        print appname + outputdata
+        if slack is True:
+            post_to_slack(appname, outputdata, slackchannel, slackicon,
+                          slackusername, slackwebhook)
+
+if __name__ == '__main__':
+    main()
