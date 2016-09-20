@@ -64,6 +64,8 @@ def main():
                  help=("Optional: Obtain Release Date information"))
     o.add_option("--releasenotes", action="store_true", default=False,
                  help=("Optional: Obtain Release Notes information."))
+    o.add_option("--minimumos", action="store_true", default=False,
+                 help=("Optional: Obtain Minimum OS information."))
     o.add_option("--slack", action="store_true", default=False,
                  help=("Optional: Use Slack"))
     o.add_option("--slackwebhook", default=None,
@@ -85,6 +87,7 @@ def main():
     version = opts.version
     releasenotes = opts.releasenotes
     releasedate = opts.releasedate
+    minos = opts.minimumos
     slack = opts.slack
     slackwebhook = opts.slackwebhook
     slackusername = opts.slackusername
@@ -95,14 +98,21 @@ def main():
     else:
         appname = ('Application: %s (iOS)' % get_results(id)['trackName'])
     # Hacky way to dynamically generate output data with newlines.
+    if minos is True:
+        minos = '\nMinimum OS: %s' % get_results(id)['minimumOsVersion']
     if version is True:
         version = '\nVersion: %s' % get_results(id)['version']
     if releasenotes is True:
-        releasenotes = '\nRelease Notes: %s' % get_results(id)['releaseNotes']
+        try:
+            releasenotes = '\nRelease Notes: %s' % get_results(id)['releaseNotes']
+        except Exception:
+            # If no release notes, use description:
+            releasenotes = '\nRelease Notes: %s' % get_results(id)['description']
+            sys.stderr.write('Failed to obtain Release Notes.')
     if releasedate is True:
         releasedate = ('\nRelease Date: %s'
                        % get_results(id)['currentVersionReleaseDate'][0:10])
-    datatypes = [version, releasedate, releasenotes]
+    datatypes = [minos, version, releasedate, releasenotes]
     outputdata = ' '.join(filter(None, datatypes))
 
     # Start the work
