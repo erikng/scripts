@@ -5,8 +5,9 @@
 # User notifications designed around Yo
 
 # Written by Erik Gomez
+from CoreFoundation import CFPreferencesCopyAppValue, CFPreferencesSetAppValue
+from Foundation import NSDate, NSMutableArray
 from SystemConfiguration import SCDynamicStoreCopyConsoleUser
-import datetime
 import os
 import platform
 import plistlib
@@ -168,14 +169,18 @@ def nvram():
 
 
 def writePlist(timestamp, writePlistPath):
-    sippysip = {'Events': []}
+    sippysip = []
     if os.path.isfile(writePlistPath):
-        sippysip = plistlib.readPlist(writePlistPath)
-        sippysip['Events'].append(str(timestamp))
-        plistlib.writePlist(sippysip, writePlistPath)
+        sippysip = CFPreferencesCopyAppValue('Events', writePlistPath)
+        if sippysip:
+            sippysip = NSMutableArray.alloc().initWithArray_(sippysip)
+        else:
+            sippysip = []
+        sippysip.append(timestamp)
+        CFPreferencesSetAppValue('Events', sippysip, writePlistPath)
     else:
-        sippysip['Events'].append(str(timestamp))
-        plistlib.writePlist(sippysip, writePlistPath)
+        sippysip.append(timestamp)
+        CFPreferencesSetAppValue('Events', sippysip, writePlistPath)
 
 
 def getOSVersion():
@@ -218,7 +223,7 @@ def main():
             sipCsrutilClear = csrutil('clear')
             if sipCsrutilClear:
                 SippySIPLog('SIP Re-Enabled - Logging event to plist.')
-                timestamp = datetime.datetime.utcnow()
+                timestamp = NSDate.date()
                 sippysipPlist = writePlist(timestamp, writePlistPath)
                 pendingReboot = True
         else:
@@ -236,7 +241,7 @@ def main():
             sipCsrutilClear = csrutil('clear')
             if sipCsrutilClear:
                 SippySIPLog('SIP Re-Enabled - Logging event to plist.')
-                timestamp = datetime.datetime.utcnow()
+                timestamp = NSDate.date()
                 sippysipPlist = writePlist(timestamp, writePlistPath)
                 pendingReboot = True
         else:
